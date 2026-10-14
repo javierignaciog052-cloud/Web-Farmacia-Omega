@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Farmacia Omega | Tienda Online & Recetas</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            logo: ['"Montserrat"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#232B35',       // Gris grafito de la fachada de Farmacia Omega
+              darker: '#181E25',     // Gris profundo para topbar
+              charcoal: '#4A4F55',   // Gris del texto del logo
+              cyan: '#00A8CC',       // Cian turquesa exacto del logo
+              cyanHover: '#008FAE',
+              cyanLight: '#E6F7FB',
+              silver: '#D6D8DC',     // Gris claro de la cruz del logo
+            }
+          },
+          boxShadow: {
+            'card': '0 4px 20px -2px rgba(24, 30, 37, 0.06)',
+            'floating': '0 10px 25px -4px rgba(0, 168, 204, 0.35)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="bg-[#F4F7F9] text-slate-800 font-sans antialiased min-h-screen flex flex-col pb-20 md:pb-0 selection:bg-brand-cyan selection:text-white">
+
+  <!-- ==========================================
+       BARRA SUPERIOR EXCLUSIVA DE MODO EDITOR
+       (Oculta para compradores normales)
+  =========================================== -->
+  <div id="adminBar" class="hidden bg-amber-400 text-slate-950 px-4 py-2.5 sticky top-0 z-50 shadow-md border-b border-amber-500">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="bg-slate-950 text-amber-400 text-[11px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-unlock-keyhole"></i> Modo Editor Activo
+        </span>
+        <span class="text-xs font-bold hidden sm:inline">Hacé clic en "+ Nuevo Producto" o usá los botones sobre cada producto para editar/borrar.</span>
+      </div>
+      
+      <div class="flex items-center gap-2 flex-wrap">
+        <button type="button" onclick="window.openProductModal()" class="bg-slate-950 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer">
+          <i class="fa-solid fa-plus text-brand-cyan"></i> Nuevo Producto
+        </button>
+        <button type="button" onclick="window.openSettingsModal()" class="bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer">
+          <i class="fa-solid fa-gear"></i> Configurar Tienda
+        </button>
+        <button type="button" onclick="window.downloadUpdatedHTML()" title="Descarga el archivo index.html con todos los cambios guardados para subir a Vercel" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer">
+          <i class="fa-solid fa-download"></i> Guardar Web para Vercel
+        </button>
+        <button type="button" onclick="window.logoutAdmin()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer">
+          <i class="fa-solid fa-right-from-bracket"></i> Salir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       NOTIFICACIÓN FLOTANTE (TOAST)
+  =========================================== -->
+  <div id="toast" class="fixed top-5 right-5 z-[70] transform translate-y-[-200%] opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 bg-brand-dark text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700">
+    <div class="w-8 h-8 rounded-full bg-brand-cyan/20 text-brand-cyan flex items-center justify-center text-sm shrink-0">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+      <h5 class="text-xs font-bold" id="toastTitle">Listo</h5>
+      <p class="text-[11px] text-slate-300" id="toastMessage">Acción completada</p>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       1. TOPBAR INSTITUCIONAL
+  =========================================== -->
+  <aside class="bg-brand-darker text-slate-300 text-xs py-2 px-4 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto flex justify-between items-center font-medium">
+      <div class="flex items-center gap-4 md:gap-6">
+        <span class="flex items-center gap-1.5">
+          <i class="fa-solid fa-location-dot text-brand-cyan"></i>
+          <span id="uiLocationText" class="text-[11px] md:text-xs">Añatuya, Santiago del Estero</span>
+        </span>
+        <span class="hidden md:flex items-center gap-1.5">
+          <i class="fa-solid fa-clock text-brand-cyan"></i>
+          <span id="uiHoursText">Lun a Sáb: 08:00 a 13:00 y 17:00 a 22:00 hs</span>
+        </span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="hidden sm:flex items-center gap-1.5 text-emerald-400 text-[11px]">
+          <i class="fa-solid fa-circle-check"></i> Obras Sociales y Recetas Digitales
+        </span>
+        <button type="button" id="topAdminBtn" onclick="window.handleAdminTrigger()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700 hover:border-brand-cyan transition flex items-center gap-1.5 cursor-pointer" title="Acceso Editor">
+          <i class="fa-solid fa-lock text-brand-cyan text-[10px]"></i> <span>Modo Editor</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==========================================
+       2. HEADER PRINCIPAL
+  =========================================== -->
+  <header class="bg-brand-dark text-white sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-3 md:py-3.5 flex items-center justify-between gap-3 md:gap-6">
+      
+      <!-- LOGO FARMACIA OMEGA -->
+      <a href="#catalogo" onclick="window.setCategory('todos', false); return false;" class="flex items-center gap-3 shrink-0 group focus:outline-none cursor-pointer">
+        <div class="w-10 h-10 md:w-12 md:h-12 relative flex items-center justify-center bg-white rounded-2xl p-1.5 shadow-sm group-hover:scale-105 transition">
+          <svg viewBox="0 0 120 120" class="w-full h-full">
+            <path d="M44 14 C44 6, 76 6, 76 14 L76 44 L106 44 C114 44, 114 76, 106 76 L60 76 C51 76, 44 69, 44 60 Z" fill="#D6D8DC" />
+            <path d="M14 44 L60 44 C69 44, 76 51, 76 60 L76 106 C76 114, 44 114, 44 106 L44 76 L14 76 C6 76, 6 44, 14 44 Z" fill="#00A8CC" />
+            <path d="M44 44 L60 44 C69 44, 76 51, 76 60 L76 76 L60 76 C51 76, 44 69, 44 60 Z" fill="#4A4F55" />
+          </svg>
+        </div>
+        <div class="flex flex-col font-logo">
+          <span class="text-[9px] md:text-[10px] tracking-[0.34em] text-slate-300 font-medium uppercase leading-none mb-0.5">FARMACIA</span>
+          <span class="text-xl md:text-2xl font-extrabold tracking-wider text-white leading-none">OMEGA</span>
+        </div>
+      </a>
+
+      <!-- BUSCADOR INTELIGENTE (PC) -->
+      <div class="flex-1 max-w-xl relative hidden md:block">
+        <input 
+          id="searchInputDesktop"
+          type="text" 
+          placeholder="Buscá por producto, marca, laboratorio o síntoma..." 
+          class="w-full bg-white text-slate-800 placeholder-slate-400 text-sm rounded-full pl-11 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-brand-cyan shadow-inner transition"
+          oninput="window.handleSearch(this.value)"
+        />
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-sm"></i>
+        <button type="button" id="clearSearchBtn" onclick="window.clearSearch()" class="hidden absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </button>
+      </div>
+
+      <!-- ACCIONES DE CABECERA -->
+      <div class="flex items-center gap-2.5">
+        <button 
+          type="button"
+          id="headerAddProductBtn"
+          onclick="window.openProductModal()"
+          class="hidden items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold px-3.5 py-2.5 rounded-full transition shadow-sm cursor-pointer">
+          <i class="fa-solid fa-plus"></i>
+          <span class="hidden lg:inline">Cargar Producto</span>
+        </button>
+
+        <button 
+          type="button"
+          onclick="window.openRecipeModal()"
+          class="hidden sm:flex items-center gap-2 bg-brand-cyan hover:bg-brand-cyanHover text-white text-xs md:text-sm font-bold px-4 py-2.5 rounded-full transition shadow-md hover:shadow-cyan-500/25 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-file-prescription text-sm"></i>
+          <span>SUBÍ TU RECETA</span>
+        </button>
+
+        <button 
+          type="button"
+          onclick="window.toggleCart()"
+          aria-label="Abrir Carrito"
+          class="relative bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-3.5 py-2.5 rounded-full flex items-center gap-2 transition active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-cart-shopping text-sm text-brand-cyan"></i>
+          <span class="text-xs font-bold hidden xl:inline">Carrito</span>
+          <span id="cartBadge" class="bg-brand-cyan text-white text-[11px] font-extrabold px-1.5 py-0.5 min-w-[20px] rounded-full flex items-center justify-center">
+            0
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BUSCADOR MÓVIL -->
+    <div class="px-4 pb-3 md:hidden">
+      <div class="relative w-full">
+        <input 
+          id="searchInputMobile"
+          type="text" 
+          placeholder="Buscar medicamento, marca o dermo..." 
+          class="w-full bg-white text-slate-800 placeholder-slate-400 text-xs rounded-full pl-10 pr-9 py-2.5 outline-none focus:ring-2 focus:ring-brand-cyan shadow-inner"
+          oninput="window.handleSearch(this.value)"
+        />
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+      </div>
+    </div>
+
+    <!-- BARRA DE CATEGORÍAS (APARTADOS) -->
+    <nav class="bg-white border-b border-slate-200 text-slate-700 text-xs font-bold">
+      <div class="max-w-7xl mx-auto px-4 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-2.5">
+        <div class="flex items-center gap-1.5 md:gap-2">
+          <button type="button" onclick="window.setCategory('todos', true)" data-cat="todos" class="category-pill whitespace-nowrap px-4 py-1.5 rounded-full bg-brand-cyan text-white transition cursor-pointer shadow-xs">
+            Todos
+          </button>
+          <button type="button" onclick="window.setCategory('farmacia', true)" data-cat="farmacia" class="category-pill whitespace-nowrap px-4 py-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition cursor-pointer">
+            Farmacia
+          </button>
+          <button type="button" onclick="window.setCategory('dermocosmetica', true)" data-cat="dermocosmetica" class="category-pill whitespace-nowrap px-4 py-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition cursor-pointer">
+            Dermocosmética
+          </button>
+          <button type="button" onclick="window.setCategory('belleza', true)" data-cat="belleza" class="category-pill whitespace-nowrap px-4 py-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition cursor-pointer">
+            Belleza y Perfumería
+          </button>
+          <button type="button" onclick="window.setCategory('cuidado-personal', true)" data-cat="cuidado-personal" class="category-pill whitespace-nowrap px-4 py-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition cursor-pointer">
+            Cuidado Personal
+          </button>
+          <button type="button" onclick="window.setCategory('bebes', true)" data-cat="bebes" class="category-pill whitespace-nowrap px-4 py-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition cursor-pointer">
+            Bebés y Mamá
+          </button>
+          <button type="button" onclick="window.setCategory('ofertas', true)" data-cat="ofertas" class="category-pill whitespace-nowrap px-4 py-1.5 rounded-full text-rose-600 hover:bg-rose-50 transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-fire text-xs"></i> Ofertas %
+          </button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ==========================================
+       3. HERO BANNER PRINCIPAL
+  =========================================== -->
+  <section id="heroBanner" class="max-w-7xl mx-auto px-4 pt-5 pb-2 w-full">
+    <div class="relative rounded-3xl overflow-hidden shadow-card bg-gradient-to-r from-brand-dark via-[#2C3744] to-brand-dark text-white min-h-[200px] md:min-h-[250px] flex items-center border border-slate-700/40">
+      <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#00A8CC_1.5px,transparent_1.5px)] [background-size:20px_20px]"></div>
+      
+      <div class="relative z-10 p-6 md:p-10 max-w-2xl">
+        <span class="inline-flex items-center gap-1.5 bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider mb-3">
+          <i class="fa-solid fa-plus-circle"></i> Atención Farmacéutica Profesional
+        </span>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight mb-2">
+          Cuidamos de vos, <span class="text-brand-cyan">todos los días</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5 max-w-lg">
+          Hacé tu pedido online o enviá tu receta médica para retiro rápido en mostrador sin filas o envío directo a domicilio.
+        </p>
+        <div class="flex flex-wrap items-center gap-3">
+          <button type="button" onclick="window.setCategory('ofertas', true)" class="bg-brand-cyan hover:bg-brand-cyanHover text-white text-xs md:text-sm font-bold px-5 py-2.5 rounded-xl transition shadow-md flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-tag"></i> Ver Ofertas
+          </button>
+          <button type="button" onclick="window.openRecipeModal()" class="bg-white/10 hover:bg-white/20 text-white border border-white/25 text-xs md:text-sm font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-file-prescription text-brand-cyan"></i> Subir Receta
+          </button>
+        </div>
+      </div>
+
+      <div class="hidden sm:flex absolute right-8 md:right-14 opacity-15 pointer-events-none items-center justify-center">
+        <svg width="200" height="200" viewBox="0 0 120 120">
+          <path d="M44 14 C44 6, 76 6, 76 14 L76 44 L106 44 C114 44, 114 76, 106 76 L60 76 C51 76, 44 69, 44 60 Z" fill="#FFFFFF" />
+          <path d="M14 44 L60 44 C69 44, 76 51, 76 60 L76 106 C76 114, 44 114, 44 106 L44 76 L14 76 C6 76, 6 44, 14 44 Z" fill="#00A8CC" />
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       4. BENEFICIOS RÁPIDOS
+  =========================================== -->
+  <section class="max-w-7xl mx-auto px-4 py-3 w-full">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-card flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-cyanLight text-brand-cyan flex items-center justify-center text-base shrink-0">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-slate-800">Retiro sin Filas</h4>
+          <p class="text-[11px] text-slate-500">Comprá web y retirá listo</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-card flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-cyanLight text-brand-cyan flex items-center justify-center text-base shrink-0">
+          <i class="fa-solid fa-truck-fast"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-slate-800">Envíos a Domicilio</h4>
+          <p class="text-[11px] text-slate-500">Rápido y seguro</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-card flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-cyanLight text-brand-cyan flex items-center justify-center text-base shrink-0">
+          <i class="fa-solid fa-file-medical"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-slate-800">Obras Sociales</h4>
+          <p class="text-[11px] text-slate-500">Recetas físicas y digitales</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-card flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-cyanLight text-brand-cyan flex items-center justify-center text-base shrink-0">
+          <i class="fa-solid fa-credit-card"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-slate-800">Todos los Medios</h4>
+          <p class="text-[11px] text-slate-500">Efectivo, QR, Transferencia</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       5. CATÁLOGO PRINCIPAL DE PRODUCTOS
+  =========================================== -->
+  <main id="catalogo" class="max-w-7xl mx-auto px-4 py-6 w-full flex-1 scroll-mt-32">
+    
+    <!-- Barra de Título, Contador y Ordenamiento -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b border-slate-200/90 gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 id="catalogoTitle" class="text-lg md:text-2xl font-extrabold text-slate-900">
+            Todos los Productos
+          </h2>
+          <span id="activeCategoryBadge" class="hidden text-[11px] font-bold bg-brand-cyanLight text-brand-cyan px-2.5 py-0.5 rounded-full"></span>
+        </div>
+        <p id="catalogoSubtitle" class="text-xs text-slate-500 mt-0.5">Seleccioná los productos para agregarlos a tu pedido online</p>
+      </div>
+
+      <div class="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
+        <!-- Botón "+ Nuevo Producto" visible en el catálogo si es Editor -->
+        <button type="button" id="catalogAddBtn" onclick="window.openProductModal()" class="hidden bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold px-3.5 py-2 rounded-xl items-center gap-1.5 shadow-xs transition cursor-pointer">
+          <i class="fa-solid fa-plus"></i> Agregar Producto Aquí
+        </button>
+
+        <span id="itemsCount" class="text-xs font-bold bg-white text-slate-600 px-3 py-2 rounded-xl border border-slate-200">
+          0 productos
+        </span>
+
+        <select id="sortSelect" onchange="window.handleSort(this.value)" class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl px-3 py-2 outline-none focus:border-brand-cyan cursor-pointer">
+          <option value="featured">Ordenar: Destacados</option>
+          <option value="price-asc">Menor Precio</option>
+          <option value="price-desc">Mayor Precio</option>
+          <option value="discount">Mayor Descuento</option>
+          <option value="az">Alfabético (A-Z)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- GRILLA DE PRODUCTOS -->
+    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5"></div>
+
+    <!-- ESTADO VACÍO -->
+    <div id="emptyState" class="hidden py-16 text-center bg-white rounded-3xl border border-slate-200/60 my-4">
+      <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-2xl">
+        <i class="fa-solid fa-box-open"></i>
+      </div>
+      <h3 class="text-sm font-bold text-slate-800 mb-1">No hay productos en este apartado</h3>
+      <p class="text-xs text-slate-500 max-w-sm mx-auto mb-4">Probá buscando con otra palabra o volvé a ver todos los productos del catálogo.</p>
+      <div class="flex items-center justify-center gap-3">
+        <button type="button" onclick="window.clearSearch()" class="bg-brand-cyan text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-brand-cyanHover transition cursor-pointer">
+          Ver Todos los Productos
+        </button>
+        <button type="button" id="emptyStateAddBtn" onclick="window.openProductModal()" class="hidden bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-amber-300 transition cursor-pointer">
+          <i class="fa-solid fa-plus mr-1"></i> Cargar Producto en esta Categoría
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       6. MODAL DE LOGIN ADMINISTRADOR / EDITOR
+  =========================================== -->
+  <div id="adminLoginModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 modal-backdrop" onclick="window.closeAdminLoginModal()"></div>
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden z-10 relative">
+      <div class="bg-brand-dark p-5 text-white flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-cyan/20 text-brand-cyan flex items-center justify-center">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold">Acceso Modo Editor</h3>
+            <p class="text-[11px] text-slate-400">Exclusivo para administración de Farmacia Omega</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.closeAdminLoginModal()" class="text-slate-400 hover:text-white cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="window.handleAdminLogin(event)" class="p-6 space-y-4 text-xs">
+        <div id="loginError" class="hidden bg-rose-50 text-rose-600 border border-rose-200 p-3 rounded-xl font-semibold flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span>Usuario o contraseña incorrectos.</span>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Usuario Administrador</label>
+          <div class="relative">
+            <input required type="text" id="adminUserInput" placeholder="Ingresá tu usuario" autocomplete="username" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400"></i>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Contraseña</label>
+          <div class="relative">
+            <input required type="password" id="adminPassInput" placeholder="••••••••" autocomplete="current-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+            <i class="fa-solid fa-key absolute left-3.5 top-3 text-slate-400"></i>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-brand-cyan hover:bg-brand-cyanHover text-white font-bold py-3 rounded-xl transition shadow-md cursor-pointer">
+          Ingresar al Modo Editor
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       7. MODAL EDITOR: CREAR / EDITAR PRODUCTO
+  =========================================== -->
+  <div id="productFormModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 modal-backdrop" onclick="window.closeProductModal()"></div>
+    <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden z-10 relative flex flex-col max-h-[92vh]">
+      
+      <div class="bg-brand-dark p-4 md:p-5 text-white flex justify-between items-center border-b border-slate-700">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-box-open"></i>
+          </div>
+          <div>
+            <h3 id="productModalTitle" class="text-sm font-bold">Agregar Nuevo Producto</h3>
+            <p class="text-[10px] text-slate-400">Completá los datos, foto, marca y precio</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.closeProductModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="productForm" onsubmit="window.saveProductForm(event)" class="p-5 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="prodId" />
+
+        <!-- FOTO DEL PRODUCTO -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5">Foto del Producto *</label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+            <div class="relative w-full h-32 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center overflow-hidden">
+              <img id="prodImagePreview" src="" alt="Vista previa" class="hidden w-full h-full object-contain p-2 bg-white" />
+              <div id="prodImagePlaceholder" class="text-center p-2">
+                <i class="fa-solid fa-image text-2xl text-slate-400 mb-1"></i>
+                <p class="text-[10px] text-slate-500">Vista previa</p>
+              </div>
+              <button type="button" id="removeImgBtn" onclick="window.clearProductImage()" class="hidden absolute top-1.5 right-1.5 bg-rose-600 text-white w-6 h-6 rounded-full text-[10px] items-center justify-center shadow cursor-pointer">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+
+            <div class="sm:col-span-2 space-y-2">
+              <button type="button" onclick="document.getElementById('prodFileInput').click()" class="w-full bg-brand-cyanLight hover:bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer">
+                <i class="fa-solid fa-camera"></i> Elegir Foto de mi Celular / PC
+              </button>
+              <input type="file" id="prodFileInput" accept="image/*" class="hidden" onchange="window.handleProductImageUpload(event)" />
+              
+              <div class="relative">
+                <input type="text" id="prodImageUrl" placeholder="O pegá aquí el link (URL) de una foto..." oninput="window.handleImageUrlInput(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[11px] outline-none focus:bg-white focus:border-brand-cyan" />
+              </div>
+              <p class="text-[10px] text-slate-400">Las fotos subidas desde tu dispositivo se optimizan solas automáticamente.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nombre y Marca -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block font-bold text-slate-700 mb-1">Nombre del Producto *</label>
+            <input required type="text" id="prodName" placeholder="Ej: Protector Solar Anthelios FPS 50+" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Marca / Laboratorio *</label>
+            <input required type="text" id="prodBrand" placeholder="Ej: La Roche-Posay" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+          </div>
+        </div>
+
+        <!-- Apartado (Categoría) y Etiqueta -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Apartado / Categoría *</label>
+            <select id="prodCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-brand-cyan cursor-pointer">
+              <option value="farmacia">Farmacia</option>
+              <option value="dermocosmetica">Dermocosmética</option>
+              <option value="belleza">Belleza y Perfumería</option>
+              <option value="cuidado-personal">Cuidado Personal</option>
+              <option value="bebes">Bebés y Mamá</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Sub-etiqueta (Opcional)</label>
+            <input type="text" id="prodBadge" placeholder="Ej: Venta Libre, Dermo, Perfume" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+          </div>
+        </div>
+
+        <!-- Precio y Descuento -->
+        <div class="grid grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Precio Final (ARS) *</label>
+            <input required type="number" min="0" step="1" id="prodPrice" placeholder="Ej: 18500" oninput="window.updatePricePreview()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-900 outline-none focus:border-brand-cyan" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Descuento (%)</label>
+            <input type="number" min="0" max="90" step="1" id="prodDiscount" value="0" oninput="window.updatePricePreview()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-rose-600 outline-none focus:border-brand-cyan" />
+          </div>
+          <div class="flex flex-col justify-center pl-2 border-l border-slate-200">
+            <span class="text-[10px] text-slate-400 font-semibold">Se verá así:</span>
+            <span id="previewFinalPrice" class="text-sm font-extrabold text-slate-900">ARS $0</span>
+            <span id="previewOldPrice" class="text-[10px] text-slate-400 line-through hidden">ARS $0</span>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Descripción del Producto *</label>
+          <textarea required id="prodDesc" rows="3" placeholder="Describí beneficios, presentación (ej: 400ml, 30 comprimidos) o modo de uso..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:bg-white focus:border-brand-cyan"></textarea>
+        </div>
+
+        <!-- Stock Disponible -->
+        <div class="flex items-center justify-between bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200">
+          <div>
+            <span class="font-bold text-slate-700 block">Stock Disponible</span>
+            <span class="text-[10px] text-slate-400">Desmarcalo si querés que figure temporalmente como "Sin Stock"</span>
+          </div>
+          <input type="checkbox" id="prodStock" checked class="w-5 h-5 accent-brand-cyan rounded cursor-pointer" />
+        </div>
+
+        <div class="pt-2 flex gap-3">
+          <button type="button" onclick="window.closeProductModal()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition cursor-pointer">
+            Cancelar
+          </button>
+          <button type="submit" class="w-2/3 bg-brand-cyan hover:bg-brand-cyanHover text-white font-bold py-3 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Producto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       8. MODAL DE CONFIRMACIÓN PARA ELIMINAR PRODUCTO
+  =========================================== -->
+  <div id="deleteConfirmModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 modal-backdrop" onclick="window.closeDeleteModal()"></div>
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden z-10 relative p-6 text-center">
+      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="text-sm font-extrabold text-slate-900 mb-1">¿Eliminar este producto?</h3>
+      <p id="deleteProductName" class="text-xs text-slate-500 mb-5"></p>
+      <div class="flex gap-2.5">
+        <button type="button" onclick="window.closeDeleteModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl transition cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" onclick="window.confirmDeleteProduct()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer">
+          Sí, Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       9. MODAL CONFIGURACIÓN DE TIENDA (ADMIN)
+  =========================================== -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 modal-backdrop" onclick="window.closeSettingsModal()"></div>
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden z-10 relative">
+      <div class="bg-brand-dark p-5 text-white flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-sliders text-amber-400 text-lg"></i>
+          <div>
+            <h3 class="text-sm font-bold">Configuración de la Farmacia</h3>
+            <p class="text-[10px] text-slate-400">WhatsApp, dirección, horarios y clave de editor</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.closeSettingsModal()" class="text-slate-400 hover:text-white cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="window.saveSettings(event)" class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">WhatsApp para recibir pedidos *</label>
+          <input required type="text" id="cfgWhatsapp" placeholder="Ej: 5493844400000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-brand-cyan font-mono" />
+          <p class="text-[10px] text-slate-400 mt-1">Formato: 549 + código de área sin 0 + número sin 15.</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Ubicación / Dirección</label>
+          <input required type="text" id="cfgLocation" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-brand-cyan" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Horarios de Atención</label>
+          <input required type="text" id="cfgHours" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-brand-cyan" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Usuario Editor *</label>
+            <input required type="text" id="cfgUser" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-brand-cyan" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Contraseña Editor *</label>
+            <input required type="text" id="cfgPass" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-brand-cyan" />
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full bg-brand-cyan hover:bg-brand-cyanHover text-white font-bold py-3 rounded-xl transition shadow-md cursor-pointer">
+            Guardar Configuración
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       10. MODAL: SUBÍ TU RECETA
+  =========================================== -->
+  <div id="recipeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 modal-backdrop" onclick="window.closeRecipeModal()"></div>
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden z-10 relative flex flex-col max-h-[90vh]">
+      <div class="bg-brand-dark p-4 md:p-5 text-white flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-cyan/20 text-brand-cyan flex items-center justify-center text-base">
+            <i class="fa-solid fa-file-prescription"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold leading-none">Validación de Receta Médica</h3>
+            <p class="text-[10px] text-slate-400 mt-1">Cotizamos tu cobertura con Obras Sociales y Prepagas</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.closeRecipeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="window.handleRecipeSubmit(event)" class="p-5 overflow-y-auto space-y-4 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Nombre y Apellido *</label>
+            <input required type="text" id="rxName" placeholder="Ej: María Gómez" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">DNI del Paciente *</label>
+            <input required type="text" id="rxDni" placeholder="Ej: 35123456" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Obra Social / Prepaga *</label>
+            <select id="rxInsurance" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-brand-cyan">
+              <option value="IOSEP">IOSEP</option>
+              <option value="PAMI">PAMI</option>
+              <option value="OSDE">OSDE</option>
+              <option value="Swiss Medical">Swiss Medical</option>
+              <option value="Sancor Salud">Sancor Salud</option>
+              <option value="Galeno">Galeno</option>
+              <option value="Medifé">Medifé</option>
+              <option value="Particular / Otra">Particular / Otra cobertura</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">N° de Afiliado / Credencial</label>
+            <input type="text" id="rxAffiliate" placeholder="Opcional" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Código de Receta Electrónica o Medicamento</label>
+          <input type="text" id="rxDetails" placeholder="Ingresá el número de receta digital o los medicamentos..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:border-brand-cyan" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Modalidad de Entrega</label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label class="border border-slate-200 p-2.5 rounded-xl flex items-center gap-2 cursor-pointer hover:bg-slate-50">
+              <input type="radio" name="rxDelivery" value="Retiro en Farmacia" checked class="accent-brand-cyan" />
+              <span class="font-semibold">Retiro en Sucursal</span>
+            </label>
+            <label class="border border-slate-200 p-2.5 rounded-xl flex items-center gap-2 cursor-pointer hover:bg-slate-50">
+              <input type="radio" name="rxDelivery" value="Envío a Domicilio" class="accent-brand-cyan" />
+              <span class="font-semibold">Envío a Domicilio</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition shadow-md cursor-pointer">
+          <i class="fa-brands fa-whatsapp text-base"></i>
+          <span>Validar Receta por WhatsApp</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       11. MODAL DE VISTA RÁPIDA (QUICKVIEW)
+  =========================================== -->
+  <div id="quickviewModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 modal-backdrop" onclick="window.closeQuickview()"></div>
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden z-10 relative">
+      <div id="quickviewContent" class="p-6"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       12. CARRITO LATERAL INTERACTIVO
+  =========================================== -->
+  <div id="cartDrawer" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 modal-backdrop" onclick="window.toggleCart()"></div>
+    <div class="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col z-10">
+      <div class="p-4 bg-brand-dark text-white flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-bag-shopping text-brand-cyan"></i>
+          <h3 class="font-bold text-sm">Tu Pedido en Farmacia Omega</h3>
+        </div>
+        <button type="button" onclick="window.toggleCart()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-3 text-xs">
+        <div id="cartSavingsRow" class="hidden justify-between items-center text-emerald-600 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+          <span><i class="fa-solid fa-tag mr-1"></i> Ahorro en ofertas:</span>
+          <span id="cartSavingsAmount">-ARS $0</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="buyerName" placeholder="Tu Nombre" class="bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-brand-cyan" />
+          <select id="buyerDelivery" class="bg-white border border-slate-200 rounded-xl px-2.5 py-2 outline-none focus:border-brand-cyan">
+            <option value="Retiro en Sucursal">Retiro en Sucursal</option>
+            <option value="Envío a Domicilio">Envío a Domicilio</option>
+          </select>
+        </div>
+
+        <div class="flex justify-between items-center pt-1">
+          <span class="text-slate-500 font-semibold">Total a Pagar:</span>
+          <span id="cartSubtotal" class="font-extrabold text-slate-900 text-lg">ARS $0</span>
+        </div>
+
+        <button type="button" onclick="window.checkoutCartWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition shadow-md cursor-pointer">
+          <i class="fa-brands fa-whatsapp text-base"></i>
+          <span>Enviar Pedido por WhatsApp</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       13. FOOTER INSTITUCIONAL
+  =========================================== -->
+  <footer class="bg-brand-dark text-slate-300 pt-10 pb-8 mt-12 border-t border-slate-800 text-xs">
+    <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div>
+        <div class="flex items-center gap-2.5 mb-3 font-logo">
+          <span class="text-xs tracking-[0.25em] text-brand-cyan font-bold">FARMACIA</span>
+          <span class="text-lg font-extrabold text-white">OMEGA</span>
+        </div>
+        <p class="text-slate-400 text-[11px] leading-relaxed">
+          Comprometidos con la salud y el bienestar de nuestra comunidad. Medicamentos, dermocosmética, perfumería y atención farmacéutica personalizada.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="text-white font-bold mb-3 uppercase tracking-wider text-[11px]">Ubicación y Atención</h4>
+        <p class="text-slate-400 mb-2"><i class="fa-solid fa-location-dot text-brand-cyan mr-2"></i> <span id="footerLocationText">Añatuya, Santiago del Estero</span></p>
+        <p class="text-slate-400"><i class="fa-solid fa-clock text-brand-cyan mr-2"></i> <span id="footerHoursText">Lun a Sáb: 08:00 a 13:00 y 17:00 a 22:00 hs</span></p>
+      </div>
+
+      <div>
+        <h4 class="text-white font-bold mb-3 uppercase tracking-wider text-[11px]">Gestión de Catálogo</h4>
+        <p class="text-slate-400 mb-3 text-[11px]">Acceso exclusivo para administración con usuario y contraseña.</p>
+        <button type="button" onclick="window.handleAdminTrigger()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer">
+          <i class="fa-solid fa-lock text-brand-cyan"></i> Acceso Modo Editor
+        </button>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 pt-4 border-t border-slate-800 text-center text-[11px] text-slate-500">
+      © 2026 Farmacia Omega. Todos los derechos reservados.
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       14. BARRA INFERIOR MÓVIL (APP BAR)
+  =========================================== -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 py-2 px-3 md:hidden flex justify-around items-center shadow-lg">
+    <button type="button" onclick="window.setCategory('todos', false); window.scrollTo({top:0, behavior:'smooth'});" class="flex flex-col items-center text-slate-600 hover:text-brand-cyan cursor-pointer">
+      <i class="fa-solid fa-house text-base"></i>
+      <span class="text-[10px] font-semibold mt-0.5">Inicio</span>
+    </button>
+
+    <button type="button" onclick="document.getElementById('searchInputMobile').focus()" class="flex flex-col items-center text-slate-600 hover:text-brand-cyan cursor-pointer">
+      <i class="fa-solid fa-magnifying-glass text-base"></i>
+      <span class="text-[10px] font-semibold mt-0.5">Buscar</span>
+    </button>
+
+    <button type="button" onclick="window.openRecipeModal()" class="flex flex-col items-center -mt-5 cursor-pointer">
+      <div class="w-12 h-12 rounded-full bg-brand-cyan text-white flex items-center justify-center shadow-floating border-4 border-white">
+        <i class="fa-solid fa-file-prescription text-lg"></i>
+      </div>
+      <span class="text-[10px] font-bold text-brand-cyan mt-0.5">Receta</span>
+    </button>
+
+    <button type="button" onclick="window.toggleCart()" class="flex flex-col items-center text-slate-600 hover:text-brand-cyan relative cursor-pointer">
+      <i class="fa-solid fa-cart-shopping text-base"></i>
+      <span id="mobileBottomBadge" class="absolute -top-1 -right-2 bg-brand-cyan text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+      <span class="text-[10px] font-semibold mt-0.5">Pedido</span>
+    </button>
+
+    <button type="button" onclick="window.handleAdminTrigger()" class="flex flex-col items-center text-slate-500 hover:text-brand-cyan cursor-pointer">
+      <i class="fa-solid fa-user-lock text-base"></i>
+      <span class="text-[10px] font-semibold mt-0.5">Editor</span>
+    </button>
+  </div>
+
+  <!-- ==========================================
+       LÓGICA JAVASCRIPT COMPLETA Y SIN ERRORES
+  =========================================== -->
+  <script id="omegaAppScript">
+    // /*__START_EMBEDDED_DATA__*/
+    const INITIAL_CONFIG = {
+      whatsappNumber: "5493844400000",
+      location: "Añatuya, Santiago del Estero",
+      hours: "Lun a Sáb: 08:00 a 13:00 y 17:00 a 22:00 hs",
+      adminUser: "admin",
+      adminPass: "omega2026"
+    };
+
+    const INITIAL_PRODUCTS = [
+      {
+        id: 101,
+        name: "Crema Hidratante CeraVe Piel Seca a Muy Seca 454g",
+        brand: "CeraVe",
+        category: "dermocosmetica",
+        badge: "Dermocosmética",
+        price: 24800,
+        discount: 20,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+        desc: "Desarrollada con dermatólogos, contiene 3 ceramidas esenciales y ácido hialurónico para restaurar la barrera natural de la piel."
+      },
+      {
+        id: 102,
+        name: "Protector Solar La Roche-Posay Anthelios FPS 50+ Fluido",
+        brand: "La Roche-Posay",
+        category: "dermocosmetica",
+        badge: "Protección Solar",
+        price: 28900,
+        discount: 15,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80",
+        desc: "Protección solar facial de amplio espectro UVA/UVB de textura ultraligera, acabado invisible y resistente al agua."
+      },
+      {
+        id: 103,
+        name: "Actron Ibuprofeno 600mg Rápida Acción x 20 Cápsulas",
+        brand: "Bayer",
+        category: "farmacia",
+        badge: "Venta Libre",
+        price: 5400,
+        discount: 0,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80",
+        desc: "Cápsulas blandas de gelatina para el alivio rápido de dolores musculares, de cabeza y estados febriles."
+      },
+      {
+        id: 104,
+        name: "Tafirol Paracetamol 500mg x 30 Comprimidos",
+        brand: "Genomma Lab",
+        category: "farmacia",
+        badge: "Venta Libre",
+        price: 4100,
+        discount: 10,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=600&q=80",
+        desc: "Analgésico y antifebril indicado para el alivio sintomático de dolores leves a moderados."
+      },
+      {
+        id: 105,
+        name: "Sérum Facial Eucerin Hyaluron-Filler Vitamina C",
+        brand: "Eucerin",
+        category: "dermocosmetica",
+        badge: "Anti-Age",
+        price: 31500,
+        discount: 25,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1608248597359-0e6d526a6c58?auto=format&fit=crop&w=600&q=80",
+        desc: "Sérum antioxidante con 10% de Vitamina C pura recién activada y ácido hialurónico de bajo peso molecular."
+      },
+      {
+        id: 106,
+        name: "Pañales Pampers Premium Care Hiperpack Talle G x 54",
+        brand: "Pampers",
+        category: "bebes",
+        badge: "Bebés y Mamá",
+        price: 25900,
+        discount: 15,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=600&q=80",
+        desc: "Máxima absorción y suavidad tipo algodón con canales de aire para mantener la piel del bebé seca hasta por 12 horas."
+      },
+      {
+        id: 107,
+        name: "Agua Micelar Bioderma Sensibio H2O 500ml",
+        brand: "Bioderma",
+        category: "belleza",
+        badge: "Belleza",
+        price: 21200,
+        discount: 15,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=600&q=80",
+        desc: "Agua micelar dermatológica que limpia, desmaquilla y calma las pieles sensibles en un solo paso."
+      },
+      {
+        id: 108,
+        name: "Eau de Parfum Fragancia Floral Importada 100ml",
+        brand: "Perfumería Selecta",
+        category: "belleza",
+        badge: "Perfumería",
+        price: 42500,
+        discount: 20,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=600&q=80",
+        desc: "Fragancia envolvente y duradera con notas florales y fondo amaderado."
+      },
+      {
+        id: 109,
+        name: "Emulsión Corporal Dermaglós Hidratación Profunda 400ml",
+        brand: "Dermaglós",
+        category: "cuidado-personal",
+        badge: "Cuidado Diario",
+        price: 9400,
+        discount: 20,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?auto=format&fit=crop&w=600&q=80",
+        desc: "Fórmula con Vitamina A, Vitamina E y Alantoína que hidrata en profundidad y regenera la piel."
+      },
+      {
+        id: 110,
+        name: "Óleo Calcáreo Estrella Baby Algodón 500ml",
+        brand: "Estrella Baby",
+        category: "bebes",
+        badge: "Higiene Bebé",
+        price: 6800,
+        discount: 10,
+        inStock: true,
+        image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80",
+        desc: "Limpia suavemente y protege la delicada piel del bebé en cada cambio de pañal."
+      }
+    ];
+    // /*__END_EMBEDDED_DATA__*/
+
+    // Helpers seguros de almacenamiento (evitan bloqueos en navegadores estrictos o modo archivo local)
+    function safeGetStorage(key, isSession) {
+      try {
+        const store = isSession ? window.sessionStorage : window.localStorage;
+        return store.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function safeSetStorage(key, val, isSession) {
+      try {
+        const store = isSession ? window.sessionStorage : window.localStorage;
+        store.setItem(key, val);
+      } catch (e) {}
+    }
+
+    function safeRemoveStorage(key, isSession) {
+      try {
+        const store = isSession ? window.sessionStorage : window.localStorage;
+        store.removeItem(key);
+      } catch (e) {}
+    }
+
+    // Estado central de la aplicación
+    const state = {
+      config: Object.assign({}, INITIAL_CONFIG),
+      products: INITIAL_PRODUCTS.slice(),
+      cart: [],
+      isAdmin: false,
+      currentCategory: 'todos',
+      searchQuery: '',
+      sortBy: 'featured',
+      tempImageBase64: '',
+      pendingDeleteId: null
+    };
+
+    const CATEGORY_NAMES = {
+      'todos': 'Todos los Productos',
+      'farmacia': 'Apartado: Farmacia y Medicamentos',
+      'dermocosmetica': 'Apartado: Dermocosmética Clínica',
+      'belleza': 'Apartado: Belleza y Perfumería',
+      'cuidado-personal': 'Apartado: Cuidado Personal',
+      'bebes': 'Apartado: Bebés y Mamá',
+      'ofertas': 'Apartado: Ofertas y Descuentos %'
+    };
+
+    function loadPersistedState() {
+      const savedConfig = safeGetStorage("omega_config_v3", false);
+      if (savedConfig) {
+        try { state.config = Object.assign({}, state.config, JSON.parse(savedConfig)); } catch (e) {}
+      }
+
+      const savedProducts = safeGetStorage("omega_products_v3", false);
+      if (savedProducts) {
+        try {
+          const parsed = JSON.parse(savedProducts);
+          if (Array.isArray(parsed) && parsed.length > 0) state.products = parsed;
+        } catch (e) {}
+      }
+
+      const savedCart = safeGetStorage("omega_cart_v3", false);
+      if (savedCart) {
+        try { state.cart = JSON.parse(savedCart) || []; } catch (e) {}
+      }
+
+      const savedAdmin = safeGetStorage("omega_admin_session", true);
+      if (savedAdmin === "true") state.isAdmin = true;
+    }
+
+    function saveCatalogState() {
+      safeSetStorage("omega_products_v3", JSON.stringify(state.products), false);
+      safeSetStorage("omega_config_v3", JSON.stringify(state.config), false);
+    }
+
+    function applyConfigUI() {
+      document.getElementById("uiLocationText").innerText = state.config.location;
+      document.getElementById("uiHoursText").innerText = state.config.hours;
+      document.getElementById("footerLocationText").innerText = state.config.location;
+      document.getElementById("footerHoursText").innerText = state.config.hours;
+    }
+
+    function formatPrice(num) {
+      return "ARS $" + Math.round(Number(num) || 0).toLocaleString("es-AR");
+    }
+
+    function calculateOldPrice(price, discount) {
+      if (!discount || discount <= 0) return null;
+      return Math.round(price / (1 - discount / 100));
+    }
+
+    // ==========================================
+    // RENDERIZADO DE PRODUCTOS Y APARTADOS
+    // ==========================================
+    window.renderProducts = function() {
+      const grid = document.getElementById("productGrid");
+      const emptyState = document.getElementById("emptyState");
+      const emptyStateAddBtn = document.getElementById("emptyStateAddBtn");
+
+      let filtered = state.products.filter(function(p) {
+        const matchCat = (state.currentCategory === 'todos') ? true :
+                         (state.currentCategory === 'ofertas') ? (Number(p.discount) > 0) :
+                         (p.category === state.currentCategory);
+
+        const q = state.searchQuery.toLowerCase().trim();
+        const matchSearch = !q ||
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.brand && p.brand.toLowerCase().includes(q)) ||
+          (p.desc && p.desc.toLowerCase().includes(q)) ||
+          (p.badge && p.badge.toLowerCase().includes(q));
+
+        return matchCat && matchSearch;
+      });
+
+      if (state.sortBy === 'price-asc') filtered.sort(function(a, b) { return a.price - b.price; });
+      else if (state.sortBy === 'price-desc') filtered.sort(function(a, b) { return b.price - a.price; });
+      else if (state.sortBy === 'discount') filtered.sort(function(a, b) { return (b.discount || 0) - (a.discount || 0); });
+      else if (state.sortBy === 'az') filtered.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+      document.getElementById("itemsCount").innerText = filtered.length + (filtered.length === 1 ? " producto" : " productos");
+
+      if (filtered.length === 0) {
+        grid.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        if (state.isAdmin) emptyStateAddBtn.classList.remove("hidden");
+        else emptyStateAddBtn.classList.add("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+
+      grid.innerHTML = filtered.map(function(p) {
+        const oldPrice = calculateOldPrice(p.price, p.discount);
+        const adminControls = state.isAdmin ? (
+          '<div class="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl shadow-md">' +
+            '<button type="button" onclick="window.openProductModal(' + p.id + ')" title="Editar producto" class="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center gap-1 text-[11px] transition cursor-pointer">' +
+              '<i class="fa-solid fa-pen"></i> Editar' +
+            '</button>' +
+            '<button type="button" onclick="window.askDeleteProduct(' + p.id + ')" title="Eliminar producto" class="w-7 h-7 rounded-lg bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center text-xs transition cursor-pointer">' +
+              '<i class="fa-solid fa-trash"></i>' +
+            '</button>' +
+          '</div>'
+        ) : '';
+
+        const discountBadge = (p.discount > 0) ? (
+          '<span class="absolute top-3 left-3 z-10 bg-brand-cyan text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg shadow-xs">-' + p.discount + '%</span>'
+        ) : '';
+
+        const outOfStockOverlay = (!p.inStock) ? (
+          '<div class="absolute inset-0 bg-slate-900/60 flex items-center justify-center">' +
+            '<span class="bg-rose-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full">Sin Stock</span>' +
+          '</div>'
+        ) : '';
+
+        const actionBtn = p.inStock ? (
+          '<button type="button" onclick="window.addToCart(' + p.id + ')" class="w-full bg-brand-cyan hover:bg-brand-cyanHover text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer">' +
+            '<i class="fa-solid fa-cart-plus"></i> AGREGAR' +
+          '</button>'
+        ) : (
+          '<button type="button" disabled class="w-full bg-slate-200 text-slate-400 text-xs font-bold py-2.5 rounded-xl cursor-not-allowed">SIN STOCK</button>'
+        );
+
+        return (
+          '<div class="bg-white rounded-2xl border ' + (state.isAdmin ? 'border-amber-400 ring-2 ring-amber-200' : 'border-slate-200/80') + ' shadow-card hover:shadow-lg transition-all duration-200 flex flex-col justify-between overflow-hidden group relative">' +
+            adminControls +
+            '<div class="p-3.5 sm:p-4">' +
+              discountBadge +
+              '<div onclick="window.openQuickview(' + p.id + ')" class="w-full h-36 sm:h-44 bg-slate-50 rounded-xl flex items-center justify-center overflow-hidden cursor-pointer mb-3 relative group-hover:bg-slate-100/70 transition">' +
+                '<img src="' + (p.image || 'https://placehold.co/400x400/e6f7fb/00a8cc?text=Farmacia+Omega') + '" alt="' + p.name.replace(/"/g, '&quot;') + '" loading="lazy" class="w-full h-full object-contain p-2 group-hover:scale-105 transition duration-300" onerror="this.onerror=null;this.src=\'https://placehold.co/400x400/e6f7fb/00a8cc?text=Farmacia+Omega\';" />' +
+                outOfStockOverlay +
+              '</div>' +
+              '<div class="flex items-center justify-between gap-1 mb-1">' +
+                '<span class="text-[10px] font-extrabold uppercase tracking-wider text-brand-cyan truncate">' + p.brand + '</span>' +
+                '<span class="text-[9px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md shrink-0">' + (p.badge || 'Farmacia') + '</span>' +
+              '</div>' +
+              '<h3 onclick="window.openQuickview(' + p.id + ')" class="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2 hover:text-brand-cyan cursor-pointer min-h-[36px] leading-snug">' +
+                p.name +
+              '</h3>' +
+              '<div class="mt-3 flex items-baseline gap-2 flex-wrap">' +
+                '<span class="text-base sm:text-lg font-extrabold text-slate-900">' + formatPrice(p.price) + '</span>' +
+                (oldPrice ? '<span class="text-xs text-slate-400 line-through">' + formatPrice(oldPrice) + '</span>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="p-3.5 sm:p-4 pt-0">' +
+              actionBtn +
+            '</div>' +
+          '</div>'
+        );
+      }).join("");
+    };
+
+    // Cambio de Apartados / Categorías
+    window.setCategory = function(cat, shouldScroll) {
+      state.currentCategory = cat;
+
+      document.querySelectorAll(".category-pill").forEach(function(btn) {
+        btn.classList.remove("bg-brand-cyan", "text-white", "shadow-xs");
+        if (btn.getAttribute("data-cat") === "ofertas") {
+          btn.classList.add("text-rose-600");
+        } else {
+          btn.classList.add("text-slate-600");
+        }
+      });
+
+      const activeBtn = document.querySelector('.category-pill[data-cat="' + cat + '"]');
+      if (activeBtn) {
+        activeBtn.classList.remove("text-slate-600", "text-rose-600");
+        activeBtn.classList.add("bg-brand-cyan", "text-white", "shadow-xs");
+      }
+
+      document.getElementById("catalogoTitle").innerText = CATEGORY_NAMES[cat] || "Catálogo";
+      window.renderProducts();
+
+      if (shouldScroll) {
+        const catSection = document.getElementById("catalogo");
+        if (catSection) {
+          catSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+    };
+
+    // ==========================================
+    // MODO EDITOR: LOGIN Y PERMISOS
+    // ==========================================
+    window.handleAdminTrigger = function() {
+      if (state.isAdmin) {
+        window.openProductModal();
+      } else {
+        document.getElementById("loginError").classList.add("hidden");
+        document.getElementById("adminUserInput").value = "";
+        document.getElementById("adminPassInput").value = "";
+        document.getElementById("adminLoginModal").classList.remove("hidden");
+        setTimeout(function() {
+          document.getElementById("adminUserInput").focus();
+        }, 100);
+      }
+    };
+
+    window.closeAdminLoginModal = function() {
+      document.getElementById("adminLoginModal").classList.add("hidden");
+    };
+
+    window.handleAdminLogin = function(e) {
+      e.preventDefault();
+      const u = document.getElementById("adminUserInput").value.trim();
+      const p = document.getElementById("adminPassInput").value.trim();
+
+      if (u === state.config.adminUser && p === state.config.adminPass) {
+        state.isAdmin = true;
+        safeSetStorage("omega_admin_session", "true", true);
+        window.closeAdminLoginModal();
+        updateAdminUI();
+        window.renderProducts();
+        window.showToast("Modo Editor Activado", "Ya podés cargar, editar o borrar productos.");
+      } else {
+        document.getElementById("loginError").classList.remove("hidden");
+      }
+    };
+
+    window.logoutAdmin = function() {
+      state.isAdmin = false;
+      safeRemoveStorage("omega_admin_session", true);
+      updateAdminUI();
+      window.renderProducts();
+      window.showToast("Sesión cerrada", "Volviste a la vista de comprador.");
+    };
+
+    function updateAdminUI() {
+      const adminBar = document.getElementById("adminBar");
+      const headerBtn = document.getElementById("headerAddProductBtn");
+      const catalogBtn = document.getElementById("catalogAddBtn");
+      const topAdminBtn = document.getElementById("topAdminBtn");
+
+      if (state.isAdmin) {
+        adminBar.classList.remove("hidden");
+        headerBtn.classList.remove("hidden");
+        headerBtn.classList.add("flex");
+        catalogBtn.classList.remove("hidden");
+        catalogBtn.classList.add("flex");
+        topAdminBtn.innerHTML = '<i class="fa-solid fa-unlock text-amber-400"></i> <span class="text-amber-400 font-bold">Editor Activo</span>';
+      } else {
+        adminBar.classList.add("hidden");
+        headerBtn.classList.add("hidden");
+        headerBtn.classList.remove("flex");
+        catalogBtn.classList.add("hidden");
+        catalogBtn.classList.remove("flex");
+        topAdminBtn.innerHTML = '<i class="fa-solid fa-lock text-brand-cyan text-[10px]"></i> <span>Modo Editor</span>';
+      }
+    }
+
+    // ==========================================
+    // GESTIÓN DE PRODUCTOS (CREAR, EDITAR, BORRAR)
+    // ==========================================
+    window.openProductModal = function(productId) {
+      if (!state.isAdmin) {
+        window.handleAdminTrigger();
+        return;
+      }
+
+      const form = document.getElementById("productForm");
+      form.reset();
+      state.tempImageBase64 = "";
+
+      if (productId) {
+        const prod = state.products.find(function(p) { return p.id === productId; });
+        if (!prod) return;
+        document.getElementById("productModalTitle").innerText = "Editar Producto";
+        document.getElementById("prodId").value = prod.id;
+        document.getElementById("prodName").value = prod.name;
+        document.getElementById("prodBrand").value = prod.brand;
+        document.getElementById("prodCategory").value = prod.category;
+        document.getElementById("prodBadge").value = prod.badge || "";
+        document.getElementById("prodPrice").value = prod.price;
+        document.getElementById("prodDiscount").value = prod.discount || 0;
+        document.getElementById("prodDesc").value = prod.desc;
+        document.getElementById("prodStock").checked = prod.inStock !== false;
+
+        if (prod.image) {
+          state.tempImageBase64 = prod.image;
+          showImagePreview(prod.image);
+          if (prod.image.indexOf("data:") !== 0) {
+            document.getElementById("prodImageUrl").value = prod.image;
+          }
+        } else {
+          window.clearProductImage();
+        }
+      } else {
+        document.getElementById("productModalTitle").innerText = "Agregar Nuevo Producto";
+        document.getElementById("prodId").value = "";
+        document.getElementById("prodDiscount").value = 0;
+        document.getElementById("prodStock").checked = true;
+        // Preseleccionar la categoría actual si el editor está parado en un apartado específico
+        if (state.currentCategory !== 'todos' && state.currentCategory !== 'ofertas') {
+          document.getElementById("prodCategory").value = state.currentCategory;
+        }
+        window.clearProductImage();
+      }
+
+      window.updatePricePreview();
+      document.getElementById("productFormModal").classList.remove("hidden");
+    };
+
+    window.closeProductModal = function() {
+      document.getElementById("productFormModal").classList.add("hidden");
+    };
+
+    window.handleProductImageUpload = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement("canvas");
+          const MAX_SIZE = 550;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          state.tempImageBase64 = compressedDataUrl;
+          document.getElementById("prodImageUrl").value = "";
+          showImagePreview(compressedDataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.handleImageUrlInput = function(url) {
+      if (url && url.trim()) {
+        state.tempImageBase64 = url.trim();
+        showImagePreview(url.trim());
+      } else {
+        window.clearProductImage();
+      }
+    };
+
+    function showImagePreview(src) {
+      const img = document.getElementById("prodImagePreview");
+      const placeholder = document.getElementById("prodImagePlaceholder");
+      const removeBtn = document.getElementById("removeImgBtn");
+
+      img.src = src;
+      img.classList.remove("hidden");
+      placeholder.classList.add("hidden");
+      removeBtn.classList.remove("hidden");
+      removeBtn.classList.add("flex");
+    }
+
+    window.clearProductImage = function() {
+      state.tempImageBase64 = "";
+      document.getElementById("prodFileInput").value = "";
+      document.getElementById("prodImageUrl").value = "";
+      document.getElementById("prodImagePreview").classList.add("hidden");
+      document.getElementById("prodImagePlaceholder").classList.remove("hidden");
+      document.getElementById("removeImgBtn").classList.add("hidden");
+      document.getElementById("removeImgBtn").classList.remove("flex");
+    };
+
+    window.updatePricePreview = function() {
+      const price = parseFloat(document.getElementById("prodPrice").value) || 0;
+      const discount = parseFloat(document.getElementById("prodDiscount").value) || 0;
+      const oldPrice = calculateOldPrice(price, discount);
+
+      document.getElementById("previewFinalPrice").innerText = formatPrice(price);
+      const oldEl = document.getElementById("previewOldPrice");
+      if (oldPrice) {
+        oldEl.innerText = formatPrice(oldPrice);
+        oldEl.classList.remove("hidden");
+      } else {
+        oldEl.classList.add("hidden");
+      }
+    };
+
+    window.saveProductForm = function(e) {
+      e.preventDefault();
+      if (!state.isAdmin) return;
+
+      const idVal = document.getElementById("prodId").value;
+      const newProduct = {
+        id: idVal ? parseInt(idVal, 10) : Date.now(),
+        name: document.getElementById("prodName").value.trim(),
+        brand: document.getElementById("prodBrand").value.trim(),
+        category: document.getElementById("prodCategory").value,
+        badge: document.getElementById("prodBadge").value.trim() || "Farmacia",
+        price: parseFloat(document.getElementById("prodPrice").value) || 0,
+        discount: parseFloat(document.getElementById("prodDiscount").value) || 0,
+        desc: document.getElementById("prodDesc").value.trim(),
+        inStock: document.getElementById("prodStock").checked,
+        image: state.tempImageBase64 || "https://placehold.co/400x400/e6f7fb/00a8cc?text=Farmacia+Omega"
+      };
+
+      if (idVal) {
+        const idx = state.products.findIndex(function(p) { return p.id === parseInt(idVal, 10); });
+        if (idx > -1) state.products[idx] = newProduct;
+        window.showToast("Producto actualizado", newProduct.name);
+      } else {
+        state.products.unshift(newProduct);
+        window.showToast("Producto agregado", newProduct.name);
+      }
+
+      saveCatalogState();
+      window.renderProducts();
+      window.closeProductModal();
+    };
+
+    window.askDeleteProduct = function(id) {
+      if (!state.isAdmin) return;
+      const prod = state.products.find(function(p) { return p.id === id; });
+      if (!prod) return;
+      state.pendingDeleteId = id;
+      document.getElementById("deleteProductName").innerText = prod.name;
+      document.getElementById("deleteConfirmModal").classList.remove("hidden");
+    };
+
+    window.closeDeleteModal = function() {
+      state.pendingDeleteId = null;
+      document.getElementById("deleteConfirmModal").classList.add("hidden");
+    };
+
+    window.confirmDeleteProduct = function() {
+      if (!state.isAdmin || !state.pendingDeleteId) return;
+      const prod = state.products.find(function(p) { return p.id === state.pendingDeleteId; });
+      state.products = state.products.filter(function(p) { return p.id !== state.pendingDeleteId; });
+      saveCatalogState();
+      window.closeDeleteModal();
+      window.renderProducts();
+      if (prod) window.showToast("Producto eliminado", prod.name);
+    };
+
+    // ==========================================
+    // CONFIGURACIÓN Y EXPORTACIÓN PARA VERCEL
+    // ==========================================
+    window.openSettingsModal = function() {
+      if (!state.isAdmin) return;
+      document.getElementById("cfgWhatsapp").value = state.config.whatsappNumber;
+      document.getElementById("cfgLocation").value = state.config.location;
+      document.getElementById("cfgHours").value = state.config.hours;
+      document.getElementById("cfgUser").value = state.config.adminUser;
+      document.getElementById("cfgPass").value = state.config.adminPass;
+      document.getElementById("settingsModal").classList.remove("hidden");
+    };
+
+    window.closeSettingsModal = function() {
+      document.getElementById("settingsModal").classList.add("hidden");
+    };
+
+    window.saveSettings = function(e) {
+      e.preventDefault();
+      state.config.whatsappNumber = document.getElementById("cfgWhatsapp").value.trim();
+      state.config.location = document.getElementById("cfgLocation").value.trim();
+      state.config.hours = document.getElementById("cfgHours").value.trim();
+      state.config.adminUser = document.getElementById("cfgUser").value.trim();
+      state.config.adminPass = document.getElementById("cfgPass").value.trim();
+
+      saveCatalogState();
+      applyConfigUI();
+      window.closeSettingsModal();
+      window.showToast("Configuración actualizada", "Los datos fueron guardados.");
+    };
+
+    window.downloadUpdatedHTML = function() {
+      if (!state.isAdmin) return;
+
+      // Temporalmente ocultar barra de editor en el HTML exportado para que los compradores no la vean
+      const wasAdmin = state.isAdmin;
+      state.isAdmin = false;
+      updateAdminUI();
+      window.renderProducts();
+
+      let fullHtml = document.documentElement.outerHTML;
+
+      // Restaurar vista editor inmediatamente
+      state.isAdmin = wasAdmin;
+      updateAdminUI();
+      window.renderProducts();
+
+      const newEmbeddedData = [
+        "// /*__START_EMBEDDED_DATA__*/",
+        "    const INITIAL_CONFIG = " + JSON.stringify(state.config, null, 6) + ";",
+        "",
+        "    const INITIAL_PRODUCTS = " + JSON.stringify(state.products, null, 6) + ";",
+        "    // /*__END_EMBEDDED_DATA__*/"
+      ].join("\n");
+
+      const regex = /\/\/ \/\*__START_EMBEDDED_DATA__\*\/[\s\S]*?\/\/ \/\*__END_EMBEDDED_DATA__\*\//;
+      fullHtml = "<!DOCTYPE html>\n" + fullHtml.replace(regex, newEmbeddedData);
+
+      const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "index.html";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      window.showToast("Archivo index.html descargado", "Listo para subir a Vercel con tus productos actualizados.");
+    };
+
+    // ==========================================
+    // BÚSQUEDA, ORDEN Y VISTA RÁPIDA
+    // ==========================================
+    window.handleSearch = function(val) {
+      state.searchQuery = val;
+      document.getElementById("clearSearchBtn").classList.toggle("hidden", !val.trim());
+      window.renderProducts();
+    };
+
+    window.clearSearch = function() {
+      state.searchQuery = "";
+      document.getElementById("searchInputDesktop").value = "";
+      document.getElementById("searchInputMobile").value = "";
+      document.getElementById("clearSearchBtn").classList.add("hidden");
+      window.setCategory('todos', false);
+    };
+
+    window.handleSort = function(val) {
+      state.sortBy = val;
+      window.renderProducts();
+    };
+
+    window.openQuickview = function(id) {
+      const prod = state.products.find(function(p) { return p.id === id; });
+      if (!prod) return;
+      const oldPrice = calculateOldPrice(prod.price, prod.discount);
+
+      document.getElementById("quickviewContent").innerHTML =
+        '<div class="flex justify-between items-center mb-3">' +
+          '<span class="text-[10px] font-extrabold uppercase tracking-wider text-brand-cyan bg-brand-cyanLight px-3 py-1 rounded-full">' + prod.brand + ' • ' + (prod.badge || 'Farmacia') + '</span>' +
+          '<button type="button" onclick="window.closeQuickview()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center cursor-pointer">' +
+            '<i class="fa-solid fa-xmark"></i>' +
+          '</button>' +
+        '</div>' +
+        '<div class="w-full h-48 bg-slate-50 rounded-2xl flex items-center justify-center overflow-hidden mb-4 p-3">' +
+          '<img src="' + prod.image + '" alt="' + prod.name.replace(/"/g, '&quot;') + '" class="w-full h-full object-contain" />' +
+        '</div>' +
+        '<h3 class="text-base font-extrabold text-slate-900 leading-snug">' + prod.name + '</h3>' +
+        '<p class="text-xs text-slate-600 mt-2.5 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-100">' + prod.desc + '</p>' +
+        '<div class="mt-5 flex items-center justify-between gap-4">' +
+          '<div>' +
+            '<div class="text-xl font-extrabold text-slate-900">' + formatPrice(prod.price) + '</div>' +
+            (oldPrice ? '<div class="text-xs text-slate-400 line-through">' + formatPrice(oldPrice) + ' (-' + prod.discount + '%)</div>' : '') +
+          '</div>' +
+          (prod.inStock ? (
+            '<button type="button" onclick="window.addToCart(' + prod.id + '); window.closeQuickview();" class="bg-brand-cyan hover:bg-brand-cyanHover text-white text-xs font-bold px-5 py-3.5 rounded-xl flex items-center gap-2 shadow-md transition cursor-pointer">' +
+              '<i class="fa-solid fa-cart-plus"></i> Agregar al Pedido' +
+            '</button>'
+          ) : '<span class="text-xs font-bold text-rose-600">Sin Stock</span>') +
+        '</div>';
+
+      document.getElementById("quickviewModal").classList.remove("hidden");
+    };
+
+    window.closeQuickview = function() {
+      document.getElementById("quickviewModal").classList.add("hidden");
+    };
+
+    // ==========================================
+    // CARRITO DE COMPRAS Y ENVÍO POR WHATSAPP
+    // ==========================================
+    window.addToCart = function(id) {
+      const prod = state.products.find(function(p) { return p.id === id; });
+      if (!prod || !prod.inStock) return;
+
+      const existing = state.cart.find(function(c) { return c.id === id; });
+      if (existing) {
+        existing.qty++;
+      } else {
+        state.cart.push({ id: prod.id, qty: 1 });
+      }
+      safeSetStorage("omega_cart_v3", JSON.stringify(state.cart), false);
+      updateCartUI();
+      window.showToast("Agregado al pedido", prod.name);
+    };
+
+    window.updateQty = function(id, delta) {
+      const item = state.cart.find(function(c) { return c.id === id; });
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) {
+        state.cart = state.cart.filter(function(c) { return c.id !== id; });
+      }
+      safeSetStorage("omega_cart_v3", JSON.stringify(state.cart), false);
+      updateCartUI();
+    };
+
+    function updateCartUI() {
+      state.cart = state.cart.filter(function(c) {
+        return state.products.some(function(p) { return p.id === c.id; });
+      });
+
+      const count = state.cart.reduce(function(acc, item) { return acc + item.qty; }, 0);
+      document.getElementById("cartBadge").innerText = count;
+      document.getElementById("mobileBottomBadge").innerText = count;
+
+      const container = document.getElementById("cartItemsContainer");
+      const savingsRow = document.getElementById("cartSavingsRow");
+
+      if (state.cart.length === 0) {
+        container.innerHTML =
+          '<div class="text-center py-16 text-slate-400">' +
+            '<i class="fa-solid fa-basket-shopping text-4xl mb-3 text-slate-300"></i>' +
+            '<p class="text-xs font-bold text-slate-600">Tu carrito está vacío</p>' +
+            '<p class="text-[11px] text-slate-400 mt-1">Agregá productos del catálogo para armar tu pedido.</p>' +
+          '</div>';
+        document.getElementById("cartSubtotal").innerText = formatPrice(0);
+        savingsRow.classList.add("hidden");
+        return;
+      }
+
+      let total = 0;
+      let totalSavings = 0;
+
+      container.innerHTML = state.cart.map(function(c) {
+        const prod = state.products.find(function(p) { return p.id === c.id; });
+        const sub = prod.price * c.qty;
+        total += sub;
+        const old = calculateOldPrice(prod.price, prod.discount);
+        if (old) totalSavings += (old - prod.price) * c.qty;
+
+        return (
+          '<div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">' +
+            '<img src="' + prod.image + '" class="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-slate-100 shrink-0" />' +
+            '<div class="flex-1 min-w-0">' +
+              '<span class="text-[9px] font-bold uppercase text-brand-cyan block">' + prod.brand + '</span>' +
+              '<h5 class="text-xs font-bold text-slate-800 truncate">' + prod.name + '</h5>' +
+              '<span class="text-xs font-extrabold text-slate-900">' + formatPrice(sub) + '</span>' +
+            '</div>' +
+            '<div class="flex items-center gap-1.5">' +
+              '<button type="button" onclick="window.updateQty(' + prod.id + ', -1)" class="w-7 h-7 rounded-lg bg-white border border-slate-200 font-bold text-slate-700 hover:bg-slate-100 cursor-pointer">-</button>' +
+              '<span class="text-xs font-extrabold w-5 text-center">' + c.qty + '</span>' +
+              '<button type="button" onclick="window.updateQty(' + prod.id + ', 1)" class="w-7 h-7 rounded-lg bg-white border border-slate-200 font-bold text-slate-700 hover:bg-slate-100 cursor-pointer">+</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join("");
+
+      document.getElementById("cartSubtotal").innerText = formatPrice(total);
+      if (totalSavings > 0) {
+        document.getElementById("cartSavingsAmount").innerText = "-" + formatPrice(totalSavings);
+        savingsRow.classList.remove("hidden");
+        savingsRow.classList.add("flex");
+      } else {
+        savingsRow.classList.add("hidden");
+      }
+    }
+
+    window.toggleCart = function() {
+      document.getElementById("cartDrawer").classList.toggle("hidden");
+    };
+
+    window.checkoutCartWhatsApp = function() {
+      if (state.cart.length === 0) {
+        window.showToast("Carrito vacío", "Agregá al menos un producto.");
+        return;
+      }
+
+      const buyer = document.getElementById("buyerName").value.trim() || "Cliente Web";
+      const delivery = document.getElementById("buyerDelivery").value;
+
+      let msg = "*NUEVO PEDIDO WEB - FARMACIA OMEGA*%0A";
+      msg += "👤 *Cliente:* " + encodeURIComponent(buyer) + "%0A";
+      msg += "🚚 *Entrega:* " + encodeURIComponent(delivery) + "%0A%0A";
+      msg += "*Detalle del pedido:*%0A";
+
+      let total = 0;
+      state.cart.forEach(function(c) {
+        const prod = state.products.find(function(p) { return p.id === c.id; });
+        const sub = prod.price * c.qty;
+        total += sub;
+        msg += "• " + c.qty + "x " + encodeURIComponent(prod.name) + " (" + encodeURIComponent(prod.brand) + ") - " + encodeURIComponent(formatPrice(sub)) + "%0A";
+      });
+
+      msg += "%0A*TOTAL: " + encodeURIComponent(formatPrice(total)) + "*%0A%0A¿Me confirman disponibilidad para coordinar el pago?";
+      window.open("https://wa.me/" + state.config.whatsappNumber + "?text=" + msg, "_blank");
+    };
+
+    // ==========================================
+    // RECETAS MÉDICAS
+    // ==========================================
+    window.openRecipeModal = function() {
+      document.getElementById("recipeModal").classList.remove("hidden");
+    };
+
+    window.closeRecipeModal = function() {
+      document.getElementById("recipeModal").classList.add("hidden");
+    };
+
+    window.handleRecipeSubmit = function(e) {
+      e.preventDefault();
+      const name = document.getElementById("rxName").value.trim();
+      const dni = document.getElementById("rxDni").value.trim();
+      const ins = document.getElementById("rxInsurance").value;
+      const aff = document.getElementById("rxAffiliate").value.trim() || "No especificado";
+      const det = document.getElementById("rxDetails").value.trim() || "Adjunto foto de la receta";
+      const del = document.querySelector('input[name="rxDelivery"]:checked').value;
+
+      let msg = "*VALIDACIÓN DE RECETA MÉDICA - FARMACIA OMEGA*%0A%0A";
+      msg += "👤 *Paciente:* " + encodeURIComponent(name) + "%0A";
+      msg += "🪪 *DNI:* " + encodeURIComponent(dni) + "%0A";
+      msg += "🏥 *Obra Social:* " + encodeURIComponent(ins) + "%0A";
+      msg += "🔢 *N° Afiliado:* " + encodeURIComponent(aff) + "%0A";
+      msg += "📋 *Receta / Detalle:* " + encodeURIComponent(det) + "%0A";
+      msg += "🚚 *Modalidad:* " + encodeURIComponent(del) + "%0A%0A";
+      msg += "_A continuación envío la imagen o PDF de la receta._";
+
+      window.closeRecipeModal();
+      window.open("https://wa.me/" + state.config.whatsappNumber + "?text=" + msg, "_blank");
+    };
+
+    window.showToast = function(title, message) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toastTitle").innerText = title;
+      document.getElementById("toastMessage").innerText = message;
+      toast.classList.remove("translate-y-[-200%]", "opacity-0");
+      toast.classList.add("translate-y-0", "opacity-100");
+      setTimeout(function() {
+        toast.classList.remove("translate-y-0", "opacity-100");
+        toast.classList.add("translate-y-[-200%]", "opacity-0");
+      }, 2800);
+    };
+
+    // Inicializar de inmediato
+    loadPersistedState();
+    applyConfigUI();
+    updateAdminUI();
+    window.renderProducts();
+    updateCartUI();
+  </script>
+</body>
+</html>
